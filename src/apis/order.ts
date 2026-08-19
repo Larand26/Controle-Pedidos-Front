@@ -32,3 +32,25 @@ export async function changeOrderStatus(
     return { success: false, message: "Error changing order status" };
   }
 }
+
+export async function getOrderStatus(): Promise<{
+  success: boolean;
+  message: string;
+  data?: { status: string };
+}> {
+  try {
+    const response = await axios.get(`${config.api.host}/api/orders/status`, {
+      headers: {
+        Authorization: `Bearer ${config.api.token}`,
+        "Content-Type": "application/json",
+      },
+    });
+    if (response.status !== 200) {
+      return response.data;
+    }
+    return response.data;
+  } catch (error) {
+    console.error("Error getting order status:", error);
+    return { success: false, message: "Error getting order status" };
+  }
+}
