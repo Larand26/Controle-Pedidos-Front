@@ -10,8 +10,10 @@ export default function Finish() {
   const handleChangeOrderStatus = async (orderId: string) => {
     try {
       const response = await changeOrderStatus(Number(orderId), 14);
-      setOrderId(null);
-      setIsPopupOpen(true);
+      if (response.success) {
+        setOrderId(null);
+        setIsPopupOpen(true);
+      }
     } catch (error) {
       console.error("Error changing order status:", error);
     }
@@ -41,6 +43,11 @@ export default function Finish() {
           type="text"
           placeholder="Digite seu Pedido"
           autoFocus
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              handleChangeOrderStatus(orderId !== null ? orderId : "0");
+            }
+          }}
           className="border border-gray-300 rounded-lg p-3 w-64 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
         />
         <button
