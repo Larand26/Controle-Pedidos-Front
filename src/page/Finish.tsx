@@ -6,12 +6,19 @@ import { changeOrderStatus } from "../apis/order";
 export default function Finish() {
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [orderId, setOrderId] = useState<string | null>(null);
+  const [data, setData] = useState<{
+    order: number;
+    time: number;
+    newStatus: string;
+  } | null>(null);
 
   const handleChangeOrderStatus = async (orderId: string) => {
     try {
       const response = await changeOrderStatus(Number(orderId), 14);
+      console.log("Response from changeOrderStatus:", response);
       if (response.success) {
         setOrderId(null);
+        setData(response.data ?? null);
         setIsPopupOpen(true);
       }
     } catch (error) {
@@ -62,8 +69,7 @@ export default function Finish() {
       <PopupFinish
         isOpen={isPopupOpen}
         onClose={handleClosePopup} // 5. Passe a nova função no onClose
-        // Coloquei 900000ms de exemplo, pois na lógica anterior fizemos a conversão de ms para minutos (900000ms = 15 minutos)
-        data={{ order: 123, time: 900000 }}
+        data={data}
       />
     </div>
   );

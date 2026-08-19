@@ -4,7 +4,11 @@ import axios from "axios";
 export async function changeOrderStatus(
   orderId: number,
   status: number,
-): Promise<{ success: boolean; message: string }> {
+): Promise<{
+  success: boolean;
+  message: string;
+  data?: { order: number; time: number; newStatus: string };
+}> {
   try {
     const body = {
       newStatusID: status,
@@ -20,9 +24,9 @@ export async function changeOrderStatus(
       },
     );
     if (response.status !== 200) {
-      return { success: true, message: "Status atualizado com sucesso" };
+      return response.data;
     }
-    return { success: true, message: "Status atualizado com sucesso" };
+    return response.data;
   } catch (error) {
     console.error("Error changing order status:", error);
     return { success: false, message: "Error changing order status" };

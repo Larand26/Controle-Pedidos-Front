@@ -4,12 +4,13 @@ import Popup from "./Popup";
 type OrderData = {
   order: string | number;
   time: number; // em ms
+  newStatus?: string;
 };
 
 type PopupFinishProps = {
   isOpen: boolean;
   onClose: () => void;
-  data?: OrderData;
+  data?: OrderData | null;
 };
 
 export default function PopupFinish({
