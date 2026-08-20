@@ -1,38 +1,38 @@
 import { useEffect } from "react";
-import Popup from "./Popup"; // Mantém a sua importação original
-
+import Popup from "./Popup";
 import { changeOrderStatus } from "../../apis/order";
+import {
+  parseSeparators,
+  type OrderStatusData,
+} from "../../utils/separator.logic";
 
-type OrderData = {
-  ID_SITUACAO: number;
-  SIT_DESCRICAO: string;
-};
-
-type PopupSeparatorProps = {
+export type PopupSeparatorProps = {
   isOpen: boolean;
   onClose: () => void;
-  // Assumindo que a API ou o componente pai envia a lista completa de status
-  situacoes: OrderData[];
-  orderId?: number; // Adicione o orderId se necessário para a função changeOrderStatus
+  situations: OrderStatusData[];
+  orderId?: number;
 };
 
-export default function PopupSeparator(props: PopupSeparatorProps) {
-  const { isOpen, onClose, situacoes, orderId } = props;
-
+export default function PopupSeparator({
+  isOpen,
+  onClose,
+  situations,
+  orderId,
+}: PopupSeparatorProps) {
   useEffect(() => {
     console.log("PopupSeparator montado");
   }, []);
 
-  // 1. Filtra apenas as descrições que contêm o separador "|"
-  const colaboradores =
-    situacoes?.filter((sit) => sit.SIT_DESCRICAO.includes("|")) || [];
+  const parsedSeparators = parseSeparators(situations);
 
-  const handleChangeStatus = async (orderId: number, statusId: number) => {
+  const handleChangeStatus = async (
+    currentOrderId: number,
+    statusId: number,
+  ) => {
     try {
-      const response = await changeOrderStatus(orderId, statusId);
+      const response = await changeOrderStatus(currentOrderId, statusId);
       if (response.success) {
-        console.log("Status alterado com sucesso:", response.data);
-        onClose(); // Fecha o popup após a alteração bem-sucedida
+        onClose();
       }
     } catch (error) {
       console.error("Erro ao alterar o status:", error);
@@ -40,82 +40,36 @@ export default function PopupSeparator(props: PopupSeparatorProps) {
   };
 
   return (
-    <Popup isOpen={isOpen} onClose={onClose}>
-      {/* Container principal do Popup */}
-      <div className="w-full max-w-4xl p-6 bg-white rounded-2xl shadow-2xl flex flex-col gap-6">
-        {/* Cabeçalho */}
-        <div className="flex justify-between items-center border-b border-gray-100 pb-4">
-          <div>
-            <h2 className="text-xl font-bold text-gray-800">
-              Atribuir Separador
-            </h2>
-            <p className="text-sm text-gray-500 mt-1">
-              Selecione o separador responsável
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
-            title="Fechar"
-          >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+    <Popup isOpen={isOpen} onClose={onClose} title="Atribuir Separador">
+      <div className="flex flex-col gap-4">
+        <p className="text-md text-[#1C1C1C]/70 font-montserrat mb-2">
+          Selecione o separador responsável
+        </p>
+
+        <div className="grid grid-cols-1 gap-3 overflow-y-auto max-h-[50vh] pr-2 custom-scrollbar">
+          {parsedSeparators.map((separator) => (
+            <div
+              key={separator.id}
+              onClick={() => {
+                if (orderId) handleChangeStatus(orderId, separator.id);
+              }}
+              className="group flex items-center p-4 bg-white border border-[#1C1C1C]/10 rounded-lg cursor-pointer hover:border-[#003650] hover:shadow-md transition-all duration-200"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
-        </div>
-
-        {/* Grid de Cards (Responsivo) */}
-        <div className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-1 gap-4 overflow-y-auto max-h-[60vh] pr-2 custom-scrollbar">
-          {colaboradores.map((colaborador) => {
-            // 2. Extrai o nome (Tudo que vem depois do "|")
-            const nomeSeparador =
-              colaborador.SIT_DESCRICAO.split("|")[1].trim();
-
-            // 3. Pega as duas primeiras iniciais para o Avatar (ex: "Alex Mariano" -> "AM")
-            const iniciais = nomeSeparador
-              .split(" ")
-              .map((n) => n[0])
-              .join("")
-              .substring(0, 2)
-              .toUpperCase();
-
-            return (
-              <div
-                key={colaborador.ID_SITUACAO}
-                onClick={() => {
-                  if (orderId) {
-                    handleChangeStatus(orderId, colaborador.ID_SITUACAO);
-                  }
-                }}
-                className="group flex items-center p-4 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer hover:bg-blue-50 hover:border-blue-400 hover:shadow-md transition-all duration-200 ease-in-out"
-              >
-                {/* Avatar do Colaborador */}
-                <div className="flex-shrink-0 w-12 h-12 bg-blue-100 text-blue-600 font-bold flex items-center justify-center rounded-full group-hover:bg-blue-500 group-hover:text-white transition-colors duration-200">
-                  {iniciais}
-                </div>
-
-                {/* Dados do Colaborador */}
-                <div className="ml-4 overflow-hidden">
-                  <h3 className="text-sm font-semibold text-gray-800 group-hover:text-blue-800 truncate">
-                    {nomeSeparador}
-                  </h3>
-                  <span className="text-xs text-gray-500 font-medium bg-gray-200 px-2 py-0.5 rounded-md mt-1 inline-block group-hover:bg-blue-100 group-hover:text-blue-600 transition-colors">
-                    ID: {colaborador.ID_SITUACAO}
-                  </span>
-                </div>
+              {/* Avatar com as cores da identidade visual */}
+              <div className="flex-shrink-0 w-12 h-12 bg-[#EAEAEA] text-[#BC0F0F] font-montserrat font-bold flex items-center justify-center rounded-full group-hover:bg-[#BC0F0F] group-hover:text-[#EAEAEA] transition-colors duration-200">
+                {separator.initials}
               </div>
-            );
-          })}
+
+              <div className="ml-4 overflow-hidden">
+                <h3 className="text-md font-bold font-montserrat text-[#1C1C1C] group-hover:text-[#003650] truncate">
+                  {separator.fullName}
+                </h3>
+                <span className="text-xs text-[#EAEAEA] bg-[#1C1C1C]/60 font-montserrat px-2 py-1 rounded-md mt-1 inline-block group-hover:bg-[#003650] transition-colors">
+                  ID: {separator.id}
+                </span>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </Popup>

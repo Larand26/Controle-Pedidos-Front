@@ -1,13 +1,14 @@
-import { useEffect } from "react"; // <-- Importe o useEffect
+import { useEffect } from "react";
 import Popup from "./Popup";
+import { calculateMinutes } from "../../utils/finish.logic";
 
-type OrderData = {
+export type OrderData = {
   order: string | number;
-  time: number; // em ms
+  time: number;
   newStatus?: string;
 };
 
-type PopupFinishProps = {
+export type PopupFinishProps = {
   isOpen: boolean;
   onClose: () => void;
   data?: OrderData | null;
@@ -18,33 +19,22 @@ export default function PopupFinish({
   onClose,
   data,
 }: PopupFinishProps) {
-  // Efeito que controla o fechamento automático
   useEffect(() => {
-    // Só inicia o timer se o popup estiver aberto
     if (isOpen) {
-      // Define o tempo em milissegundos (5000 = 5 segundos)
       const timer = setTimeout(() => {
         onClose();
       }, 5000);
-
-      // Função de limpeza: cancela o timer se o usuário fechar manualmente
-      // ou se o componente for desmontado antes do tempo acabar
       return () => clearTimeout(timer);
     }
   }, [isOpen, onClose]);
 
-  const getMinutes = (ms?: number) => {
-    if (!ms) return 0;
-    return Math.round(ms / 60000);
-  };
-
   return (
     <Popup isOpen={isOpen} onClose={onClose} title="Resumo do Pedido">
       {data ? (
-        <div className="flex flex-col items-center text-center py-4">
-          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
+        <div className="flex flex-col items-center text-center py-2">
+          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#003650]/10 shadow-inner">
             <svg
-              className="h-8 w-8 text-green-600 dark:text-green-500"
+              className="h-8 w-8 text-[#003650]"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -58,39 +48,38 @@ export default function PopupFinish({
             </svg>
           </div>
 
-          <h4 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+          <h4 className="text-4xl font-bebas text-[#1C1C1C] tracking-wider uppercase">
             Finalizado!
           </h4>
 
-          <p className="mt-2 text-zinc-600 dark:text-zinc-400">
+          <p className="mt-2 text-lg text-[#1C1C1C]/70 font-montserrat">
             Pedido{" "}
-            <span className="font-semibold text-zinc-900 dark:text-white">
-              #{data.order}
-            </span>
+            <span className="font-bold text-[#BC0F0F]">#{data.order}</span>
           </p>
 
-          <div className="mt-4 rounded-lg bg-zinc-200/50 dark:bg-zinc-700/50 px-4 py-2 w-full">
-            <p className="text-sm text-zinc-600 dark:text-zinc-300">
+          <div className="mt-6 rounded-lg bg-white shadow-sm border border-[#1C1C1C]/10 px-6 py-3 w-full">
+            <p className="text-md text-[#1C1C1C]/80 font-montserrat">
               Tempo de Separação:{" "}
-              <span className="font-bold">{getMinutes(data.time)} min</span>
+              <span className="font-bold text-[#003650]">
+                {calculateMinutes(data.time)} min
+              </span>
             </p>
           </div>
 
-          {/* Opcional: Feedback visual de que vai fechar sozinho */}
-          <p className="mt-6 text-xs text-zinc-400">
+          <p className="mt-6 text-sm text-[#1C1C1C]/50 font-montserrat italic">
             Fechando automaticamente em alguns segundos...
           </p>
         </div>
       ) : (
-        <p className="text-center text-zinc-500">
+        <p className="text-center text-[#1C1C1C]/60 font-montserrat">
           Carregando dados do pedido...
         </p>
       )}
 
-      <div className="mt-4 w-full">
+      <div className="mt-6 w-full">
         <button
           onClick={onClose}
-          className="w-full rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-800 cursor-pointer"
+          className="w-full rounded-md bg-[#003650] px-4 py-3 font-montserrat font-bold text-[#EAEAEA] transition-all hover:bg-[#002233] hover:shadow-lg focus:outline-none cursor-pointer"
         >
           Fechar agora
         </button>

@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Finish from "./page/Finish";
-import Separator from "./page/Separator";
+import Finish from "./pages/Finish";
+import Separator from "./pages/Separator";
 
 export default function App() {
   return (
@@ -8,8 +8,6 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Finish />} />
         <Route path="/separator" element={<Separator />} />
-
-        <Route></Route>
       </Routes>
     </BrowserRouter>
   );
