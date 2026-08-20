@@ -56,9 +56,7 @@ export default function AssignSeparator() {
       if (response.success && response.data) {
         //[cite: 1]
         const filtered = response.data
-          .filter((status: any) =>
-            status.description?.includes("EM SEPARACAO |"),
-          )
+          .filter((status: any) => status.description?.includes("EM SEPARACAO"))
           .map((status: any) => ({
             id: status.id,
             name: status.description.replace("EM SEPARACAO |", "").trim(),
