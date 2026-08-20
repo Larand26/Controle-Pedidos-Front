@@ -6,7 +6,7 @@ interface BarcodeGeneratorProps {
 
 export default function BarcodeGenerator({ value }: BarcodeGeneratorProps) {
   return (
-    <div className="bg-white p-2 rounded-md flex justify-center items-center w-full shadow-inner mt-4">
+    <div className="bg-white p-4 rounded-md flex justify-center items-center w-full shadow-inner mt-4">
       <Barcode
         value={String(value).padStart(5, "0")}
         format="CODE39"
