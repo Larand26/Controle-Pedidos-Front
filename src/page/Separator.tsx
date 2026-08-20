@@ -39,6 +39,7 @@ export default function Separator() {
 
   const handleClosePopup = () => {
     setIsPopupOpen(false);
+    setOrderId(null); // Limpa o input ao fechar o popup
     // Opcional: focar novamente no input ao fechar o popup para agilizar o próximo pedido
     inputRef.current?.focus();
   };
@@ -73,6 +74,7 @@ export default function Separator() {
         isOpen={isPopupOpen}
         onClose={handleClosePopup}
         situacoes={situacoes}
+        orderId={orderId ? parseInt(orderId) : undefined} // Passa o orderId como número, se disponível
       />
     </div>
   );

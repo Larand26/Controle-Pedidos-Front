@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 import Popup from "./Popup"; // Mantém a sua importação original
 
+import { changeOrderStatus } from "../../apis/order";
+
 type OrderData = {
   ID_SITUACAO: number;
   SIT_DESCRICAO: string;
@@ -11,10 +13,11 @@ type PopupSeparatorProps = {
   onClose: () => void;
   // Assumindo que a API ou o componente pai envia a lista completa de status
   situacoes: OrderData[];
+  orderId?: number; // Adicione o orderId se necessário para a função changeOrderStatus
 };
 
 export default function PopupSeparator(props: PopupSeparatorProps) {
-  const { isOpen, onClose, situacoes } = props;
+  const { isOpen, onClose, situacoes, orderId } = props;
 
   useEffect(() => {
     console.log("PopupSeparator montado");
@@ -23,6 +26,18 @@ export default function PopupSeparator(props: PopupSeparatorProps) {
   // 1. Filtra apenas as descrições que contêm o separador "|"
   const colaboradores =
     situacoes?.filter((sit) => sit.SIT_DESCRICAO.includes("|")) || [];
+
+  const handleChangeStatus = async (orderId: number, statusId: number) => {
+    try {
+      const response = await changeOrderStatus(orderId, statusId);
+      if (response.success) {
+        console.log("Status alterado com sucesso:", response.data);
+        onClose(); // Fecha o popup após a alteração bem-sucedida
+      }
+    } catch (error) {
+      console.error("Erro ao alterar o status:", error);
+    }
+  };
 
   return (
     <Popup isOpen={isOpen} onClose={onClose}>
@@ -35,7 +50,7 @@ export default function PopupSeparator(props: PopupSeparatorProps) {
               Atribuir Separador
             </h2>
             <p className="text-sm text-gray-500 mt-1">
-              Selecione o colaborador responsável por esta separação.
+              Selecione o separador responsável
             </p>
           </div>
           <button
@@ -60,7 +75,7 @@ export default function PopupSeparator(props: PopupSeparatorProps) {
         </div>
 
         {/* Grid de Cards (Responsivo) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto max-h-[60vh] pr-2 custom-scrollbar">
+        <div className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-1 gap-4 overflow-y-auto max-h-[60vh] pr-2 custom-scrollbar">
           {colaboradores.map((colaborador) => {
             // 2. Extrai o nome (Tudo que vem depois do "|")
             const nomeSeparador =
@@ -78,11 +93,9 @@ export default function PopupSeparator(props: PopupSeparatorProps) {
               <div
                 key={colaborador.ID_SITUACAO}
                 onClick={() => {
-                  console.log(
-                    `Selecionou: ${nomeSeparador} (ID: ${colaborador.ID_SITUACAO})`,
-                  );
-                  // Insira sua lógica de update/submit aqui
-                  // onClose();
+                  if (orderId) {
+                    handleChangeStatus(orderId, colaborador.ID_SITUACAO);
+                  }
                 }}
                 className="group flex items-center p-4 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer hover:bg-blue-50 hover:border-blue-400 hover:shadow-md transition-all duration-200 ease-in-out"
               >
