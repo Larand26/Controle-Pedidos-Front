@@ -36,7 +36,7 @@ export async function changeOrderStatus(
 export async function getOrderStatus(): Promise<{
   success: boolean;
   message: string;
-  data?: { status: string };
+  data?: any[];
 }> {
   try {
     const response = await axios.get(`${config.api.host}/api/orders/status`, {
