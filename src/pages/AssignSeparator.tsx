@@ -1,123 +1,185 @@
 import { useState, useRef, useEffect, type FormEvent } from "react";
 import { toast } from "sonner";
-import { changeOrderStatus, getOrderStatus } from "../apis/orders"; // Import from your API file
+import { changeOrderStatus, getOrderStatus } from "../apis/orders"; //[cite: 1]
+import BarcodeGenerator from "../components/BarcodeGenerator";
 
-// Interface baseada no retorno genérico da API
 interface SeparatorStatus {
   id: number;
   name: string;
 }
 
+type ScanStep = "ORDER" | "SEPARATOR";
+
 export default function AssignSeparator() {
-  const [orderId, setOrderId] = useState<string>("");
+  // State Machine
+  const [step, setStep] = useState<ScanStep>("ORDER");
+  const [scannedOrderId, setScannedOrderId] = useState<number | null>(null);
+  const [inputValue, setInputValue] = useState<string>("");
+
+  // Data States
   const [separators, setSeparators] = useState<SeparatorStatus[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const orderInputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchSeparators();
-    orderInputRef.current?.focus();
+    focusInput();
   }, []);
 
-  const fetchSeparators = async () => {
-    const response = await getOrderStatus(); //[cite: 1]
-
-    if (response.success && response.data) {
-      //[cite: 1]
-      // Filtra e limpa a string "EM SEPARACAO | "
-      const filtered = response.data
-        .filter((status: any) => status.description?.includes("EM SEPARACAO |"))
-        .map((status: any) => ({
-          id: status.id,
-          name: status.description.replace("EM SEPARACAO |", "").trim(),
-        }));
-      setSeparators(filtered);
-    } else {
-      toast.error(response.message || "Falha ao carregar separadores."); //[cite: 1]
-    }
-  };
-
-  const handleAssign = async (separatorId: number) => {
-    if (!orderId.trim()) {
-      toast.error("Por favor, bipe o ID do pedido primeiro.");
-      orderInputRef.current?.focus();
-      return;
-    }
-
-    setIsLoading(true);
-    const parsedOrderId = parseInt(orderId, 10);
-
-    const response = await changeOrderStatus(parsedOrderId, separatorId); //[cite: 1]
-
-    if (response.success) {
-      //[cite: 1]
-      toast.success(`Separador atribuído ao pedido ${parsedOrderId}!`);
-      setOrderId("");
-    } else {
-      toast.error(response.message || "Erro ao atribuir separador."); //[cite: 1]
-    }
-
-    setIsLoading(false);
+  const focusInput = () => {
     setTimeout(() => {
-      orderInputRef.current?.focus();
+      inputRef.current?.focus();
     }, 100);
   };
 
-  const handleOrderSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    // Apenas impede o reload, o fluxo real acontece ao clicar/bipar o separador
-    if (orderId) {
-      toast.info("Pedido bipado. Agora selecione ou bipe o separador.");
+  const fetchSeparators = async () => {
+    try {
+      const response = await getOrderStatus(); //[cite: 1]
+      if (response.success && response.data) {
+        //[cite: 1]
+        const filtered = response.data
+          .filter((status: any) =>
+            status.description?.includes("EM SEPARACAO |"),
+          )
+          .map((status: any) => ({
+            id: status.id,
+            name: status.description.replace("EM SEPARACAO |", "").trim(),
+          }));
+        setSeparators(filtered);
+      } else {
+        toast.error(response.message || "Falha ao carregar separadores."); //[cite: 1]
+      }
+    } catch (error) {
+      toast.error("Erro de conexão ao carregar separadores.");
     }
+  };
+
+  const processAssignment = async (
+    orderIdToAssign: number,
+    separatorId: number,
+  ) => {
+    setIsLoading(true);
+
+    try {
+      const response = await changeOrderStatus(orderIdToAssign, separatorId); //[cite: 1]
+
+      if (response.success) {
+        //[cite: 1]
+        toast.success(`Pedido ${orderIdToAssign} atribuído com sucesso!`);
+      } else {
+        toast.error(
+          response.message || "Erro ao atribuir separador. Tente novamente.",
+        ); //[cite: 1]
+      }
+    } catch (error) {
+      toast.error(
+        "Erro fatal ao processar. Verifique a conexão e tente novamente.",
+      );
+    } finally {
+      // Step D: Reset State Machine and wait for the next order
+      setStep("ORDER");
+      setScannedOrderId(null);
+      setInputValue("");
+      setIsLoading(false);
+      focusInput();
+    }
+  };
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    if (!inputValue.trim()) return;
+
+    const parsedValue = parseInt(inputValue, 10);
+
+    // Step A to B: Order ID scanned
+    if (step === "ORDER") {
+      setScannedOrderId(parsedValue);
+      setStep("SEPARATOR");
+      setInputValue("");
+      toast.info("Pedido registrado. Agora bipe o crachá do Separador.");
+      focusInput();
+      return;
+    }
+
+    // Step C: Separator ID scanned
+    if (step === "SEPARATOR" && scannedOrderId) {
+      processAssignment(scannedOrderId, parsedValue);
+    }
+  };
+
+  // Allow clicking the card as an alternative to scanning the badge
+  const handleCardClick = (separatorId: number) => {
+    if (step !== "SEPARATOR" || !scannedOrderId) {
+      toast.warning("Por favor, bipe o ID do pedido primeiro!");
+      focusInput();
+      return;
+    }
+    processAssignment(scannedOrderId, separatorId);
   };
 
   return (
     <div className="flex-1 flex flex-col max-w-5xl mx-auto w-full gap-8 py-8">
-      {/* Top Section: Order Input */}
-      <div className="bg-offBlack/80 p-8 rounded-2xl border border-petrolBlue shadow-glow">
-        <h2 className="font-title text-4xl mb-2">1. Identificar Pedido</h2>
-        <form onSubmit={handleOrderSubmit}>
+      {/* Dynamic Input Section based on State Machine */}
+      <div
+        className={`p-8 rounded-2xl border shadow-glow transition-all duration-300 ${
+          step === "ORDER"
+            ? "bg-offBlack/80 border-petrolBlue"
+            : "bg-petrolBlue/30 border-bloodRed shadow-glow-red"
+        }`}
+      >
+        <h2 className="font-title text-4xl mb-4">
+          {step === "ORDER"
+            ? "Passo 1: Identificar Pedido"
+            : `Passo 2: Atribuir Separador (Pedido #${scannedOrderId})`}
+        </h2>
+        <form onSubmit={handleSubmit}>
           <input
-            ref={orderInputRef}
+            ref={inputRef}
             type="number"
-            value={orderId}
-            onChange={(e) => setOrderId(e.target.value)}
-            placeholder="Bipe o ID do Pedido aqui..."
-            className="w-full bg-offWhite text-offBlack font-bold text-2xl py-4 px-6 rounded-lg outline-none focus:ring-4 focus:ring-petrolBlue transition-all"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            disabled={isLoading}
+            placeholder={
+              step === "ORDER"
+                ? "Bipe o ID do Pedido..."
+                : "Bipe o crachá do Separador..."
+            }
+            className="w-full bg-offWhite text-offBlack font-bold text-3xl py-6 px-6 rounded-lg outline-none focus:ring-4 focus:ring-offWhite/50 transition-all text-center"
           />
         </form>
       </div>
 
-      {/* Bottom Section: Separators Grid */}
-      <div className="bg-offBlack/80 p-8 rounded-2xl border border-petrolBlue shadow-glow">
-        <h2 className="font-title text-4xl mb-6">2. Selecionar Separador</h2>
+      {/* Separators Grid */}
+      <div className="bg-offBlack/80 p-8 rounded-2xl border border-petrolBlue shadow-glow opacity-90">
+        <h2 className="font-title text-3xl mb-6">Equipe Disponível</h2>
+
         {separators.length === 0 ? (
           <p className="text-offWhite/50">Carregando separadores...</p>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {separators.map((sep) => (
               <button
                 key={sep.id}
-                onClick={() => handleAssign(sep.id)}
+                onClick={() => handleCardClick(sep.id)}
                 disabled={isLoading}
-                className="flex flex-col items-center justify-center bg-offWhite/5 border border-white/10 hover:bg-petrolBlue/40 hover:border-petrolBlue hover:shadow-glow rounded-xl p-6 transition-all group"
+                className={`flex flex-col items-center justify-between bg-offWhite/5 border border-white/10 rounded-xl p-4 transition-all group ${
+                  step === "SEPARATOR"
+                    ? "hover:bg-petrolBlue/60 hover:border-petrolBlue hover:shadow-glow cursor-pointer"
+                    : "cursor-not-allowed opacity-50"
+                }`}
               >
-                {/* Ícone simulando código de barras/ID */}
-                <div className="mb-4 text-bloodRed group-hover:text-offWhite transition-colors">
-                  <svg
-                    width="48"
-                    height="48"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                  >
-                    <path d="M4 6h2v12H4zm4 0h1v12H8zm3 0h2v12h-2zm4 0h1v12h-1zm3 0h2v12h-2z" />
-                  </svg>
+                <div className="text-center w-full">
+                  <span className="font-bold text-xl block truncate">
+                    {sep.name}
+                  </span>
+                  <span className="text-xs text-offWhite/50 mt-1 uppercase tracking-widest">
+                    ID: {sep.id}
+                  </span>
                 </div>
-                <span className="font-bold text-lg mb-1">{sep.name}</span>
-                <span className="text-sm text-offWhite/50 bg-offBlack px-2 py-1 rounded">
-                  ID: {sep.id}
-                </span>
+
+                {/* Barcode Render */}
+                <BarcodeGenerator value={sep.id} />
               </button>
             ))}
           </div>
