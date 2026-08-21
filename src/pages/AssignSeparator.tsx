@@ -13,37 +13,34 @@ interface SeparatorStatus {
 type ScanStep = "ORDER" | "SEPARATOR"; //[cite: 2]
 
 export default function AssignSeparator() {
-  // Consumindo o contexto do Layout para ocultar/exibir o Header
   const { setShowHeader } = useOutletContext<LayoutContextType>();
 
   const [step, setStep] = useState<ScanStep>("ORDER"); //[cite: 2]
   const [scannedOrderId, setScannedOrderId] = useState<number | null>(null); //[cite: 2]
   const [inputValue, setInputValue] = useState<string>(""); //[cite: 2]
 
+  // Novo estado para controlar a exibição dos códigos de barra
+  const [showBarcodes, setShowBarcodes] = useState<boolean>(false);
+
   const [separators, setSeparators] = useState<SeparatorStatus[]>([]); //[cite: 2]
   const [isLoading, setIsLoading] = useState<boolean>(false); //[cite: 2]
 
   const inputRef = useRef<HTMLInputElement>(null); //[cite: 2]
 
-  // Efeito para gerenciar o "Modo Foco" (ocultar o Menu Superior no Passo 2)
   useEffect(() => {
     if (step === "SEPARATOR") {
       setShowHeader(false);
     } else {
       setShowHeader(true);
     }
-
-    // Cleanup: Restaura o menu se o componente for desmontado por qualquer motivo
     return () => setShowHeader(true);
   }, [step, setShowHeader]);
 
-  // Carregamento Inicial
   useEffect(() => {
     fetchSeparators(); //[cite: 2]
     focusInput(); //[cite: 2]
   }, []); //[cite: 2]
 
-  // Atalho de Teclado (ESC) para cancelar a operação
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && step === "SEPARATOR") {
@@ -117,7 +114,7 @@ export default function AssignSeparator() {
       setScannedOrderId(parsedValue); //[cite: 2]
       setStep("SEPARATOR"); //[cite: 2]
       setInputValue(""); //[cite: 2]
-      toast.info("Pedido registrado. Agora bipe o crachá do Separador."); //[cite: 2]
+      toast.info("Pedido registrado. Selecione o Separador.");
       focusInput(); //[cite: 2]
       return; //[cite: 2]
     }
@@ -151,7 +148,7 @@ export default function AssignSeparator() {
 
   return (
     <div className="flex-1 flex flex-col max-w-7xl mx-auto w-full h-full min-h-0 overflow-hidden py-2">
-      {/* Passo A: Input Dinâmico (Expande e Contrai) */}
+      {/* Passo A */}
       <div
         className={`rounded-2xl border transition-all duration-500 ease-in-out flex flex-col justify-center bg-offBlack/80 shadow-glow flex-shrink-0 ${
           step === "ORDER"
@@ -178,7 +175,7 @@ export default function AssignSeparator() {
         )}
       </div>
 
-      {/* Passo B: Modo Foco (Preenche o restante da tela sem Scroll) */}
+      {/* Passo B */}
       <div
         className={`bg-offBlack/80 rounded-2xl border transition-all duration-500 flex-1 flex flex-col min-h-0 overflow-hidden ${
           step === "ORDER"
@@ -186,7 +183,6 @@ export default function AssignSeparator() {
             : "border-bloodRed shadow-glow-red p-4 md:p-6 opacity-100"
         }`}
       >
-        {/* Header Compacto do Passo B */}
         <div className="flex justify-between items-center mb-3 flex-shrink-0">
           <div className="flex items-center gap-4">
             <h2
@@ -203,17 +199,30 @@ export default function AssignSeparator() {
             )}
           </div>
 
-          {step === "SEPARATOR" && (
+          <div className="flex gap-3">
+            {/* Toggle de Código de Barras */}
             <button
-              onClick={handleCancel}
-              className="text-sm font-bold text-offWhite hover:text-white border border-offWhite/30 hover:border-white py-2 px-4 rounded-lg transition-all cursor-pointer bg-offWhite/5 active:bg-bloodRed/80 hover:bg-bloodRed/40"
+              onClick={() => setShowBarcodes(!showBarcodes)}
+              className={`text-sm font-bold border py-2 px-4 rounded-lg transition-all cursor-pointer ${
+                showBarcodes
+                  ? "bg-offWhite text-offBlack border-offWhite shadow-glow"
+                  : "text-offWhite/70 hover:text-white border-offWhite/30 hover:border-white bg-offWhite/5"
+              }`}
             >
-              Cancelar (ESC)
+              {showBarcodes ? "Ocultar Códigos" : "Exibir Códigos"}
             </button>
-          )}
+
+            {step === "SEPARATOR" && (
+              <button
+                onClick={handleCancel}
+                className="text-sm font-bold text-offWhite hover:text-white border border-bloodRed/50 hover:border-bloodRed py-2 px-4 rounded-lg transition-all cursor-pointer bg-bloodRed/20 active:bg-bloodRed/80 hover:bg-bloodRed/40"
+              >
+                Cancelar (ESC)
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* Input Oculto: mantém o fluxo via Leitor de Barras vivo */}
         {step === "SEPARATOR" && (
           <form
             onSubmit={handleSubmit}
@@ -230,7 +239,6 @@ export default function AssignSeparator() {
           </form>
         )}
 
-        {/* Grid Fracionária: Divide automaticamente o espaço livre na vertical */}
         {separators.length === 0 ? (
           <p className="text-offWhite/50 flex-1 flex items-center justify-center text-xl">
             Carregando separadores...
@@ -242,27 +250,36 @@ export default function AssignSeparator() {
                 key={sep.id}
                 onClick={() => handleCardClick(sep.id)}
                 disabled={isLoading}
-                className={`flex flex-col items-center justify-center bg-offWhite/5 border border-white/10 rounded-xl p-2 transition-all group overflow-hidden ${
+                className={`flex flex-col items-center justify-center bg-offWhite/5 border border-white/10 rounded-xl p-3 transition-all group overflow-hidden ${
                   step === "SEPARATOR"
                     ? "hover:bg-petrolBlue/60 hover:border-petrolBlue hover:shadow-glow cursor-pointer transform hover:-translate-y-1 active:scale-95"
                     : "cursor-not-allowed opacity-50 grayscale"
                 }`}
               >
-                <div className="text-center w-full mb-1">
-                  <span className="font-bold text-lg leading-tight block truncate text-offWhite group-hover:text-white">
+                {/* O layout do texto muda se o código de barras estiver visível ou não */}
+                <div
+                  className={`text-center w-full transition-all ${showBarcodes ? "mb-1" : "mb-0"}`}
+                >
+                  <span
+                    className={`font-bold leading-tight block truncate text-offWhite group-hover:text-white transition-all ${showBarcodes ? "text-lg" : "text-2xl"}`}
+                  >
                     {sep.name}
                   </span>
-                  <span className="text-[10px] text-offWhite/50 mt-0.5 uppercase tracking-widest font-semibold block">
+                  <span
+                    className={`text-offWhite/50 mt-1 uppercase tracking-widest font-semibold block transition-all ${showBarcodes ? "text-[10px]" : "text-xs"}`}
+                  >
                     ID: {sep.id}
                   </span>
                 </div>
 
-                {/* Código de barras escalonado para caber perfeitamente no Card */}
-                <div
-                  className={`w-full flex items-center justify-center scale-[0.80] origin-top ${step === "SEPARATOR" ? "opacity-100" : "opacity-40"}`}
-                >
-                  <BarcodeGenerator value={sep.id} />
-                </div>
+                {/* Renderização condicional do código de barras */}
+                {showBarcodes && (
+                  <div
+                    className={`w-full flex items-center justify-center scale-[0.80] origin-top ${step === "SEPARATOR" ? "opacity-100" : "opacity-40"}`}
+                  >
+                    <BarcodeGenerator value={sep.id} />
+                  </div>
+                )}
               </button>
             ))}
           </div>
