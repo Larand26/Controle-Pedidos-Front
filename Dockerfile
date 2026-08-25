@@ -18,12 +18,14 @@ FROM nginx:alpine
 # Remove os arquivos padrão do Nginx
 RUN rm -rf /usr/share/nginx/html/*
 
-# Copia os arquivos compilados da ETAPA 1 (builder) para a pasta pública do Nginx
-# NOTA: O Vite, por padrão, gera os arquivos compilados na pasta "dist". 
-# Se o seu projeto gera em "build", mude "dist" para "build" na linha abaixo.
+# Copia os arquivos compilados da ETAPA 1 para a pasta pública do Nginx
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Expõe a porta 80 (porta padrão do Nginx)
+# --- CORREÇÃO DO REACT ROUTER (SPA FALLBACK) ---
+# Copia o arquivo personalizado do Nginx para dentro do contêiner
+COPY controle-pedidos.conf /etc/nginx/conf.d/default.conf
+
+# Expõe a porta 80 (porta padrão do Nginx internamente)
 EXPOSE 80
 
 # Inicia o Nginx e o mantém rodando em primeiro plano
