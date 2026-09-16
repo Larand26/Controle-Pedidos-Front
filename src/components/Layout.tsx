@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Outlet, NavLink } from "react-router-dom";
+import logoImg from "../assets/imgs/daniel logo-01.png";
 
 export type LayoutContextType = {
   setShowHeader: (show: boolean) => void;
@@ -20,9 +21,11 @@ export default function Layout() {
       {/* Dynamic Header Visibility */}
       {showHeader && (
         <header className="flex justify-between items-center bg-offBlack/50 p-4 rounded-xl border border-white/10 backdrop-blur-sm mb-4 shadow-glow transition-all duration-300">
-          <h1 className="font-title text-3xl tracking-wider text-offWhite">
-            Logística <span className="text-bloodRed">Pro</span>
-          </h1>
+          <img
+            src={logoImg}
+            alt="Daniel Calçados"
+            className="h-10 md:h-12 w-auto object-contain"
+          />
           <nav className="flex gap-4">
             <NavLink to="/finish" className={navClass}>
               Finalizar Pedido
