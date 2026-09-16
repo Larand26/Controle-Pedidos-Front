@@ -54,3 +54,32 @@ export async function getOrderStatus(): Promise<{
     return { success: false, message: "Error getting order status" };
   }
 }
+
+export async function getStatusById(orderId: number): Promise<{
+  success: boolean;
+  message: string;
+  data?: {
+    OrderId: number;
+    statusId: number;
+    statusName: string;
+  };
+}> {
+  try {
+    const response = await axios.get(
+      `${config.api.host}/api/orders/${orderId}/status`,
+      {
+        headers: {
+          Authorization: `Bearer ${config.api.token}`,
+          "Content-Type": "application/json",
+        },
+      },
+    );
+    if (response.status !== 200) {
+      return response.data;
+    }
+    return response.data;
+  } catch (error) {
+    console.error("Error getting order status by ID:", error);
+    return { success: false, message: "Error getting order status by ID" };
+  }
+}
