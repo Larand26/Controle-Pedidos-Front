@@ -61,7 +61,7 @@ export async function getStatusById(orderId: number): Promise<{
   data?: {
     OrderId: number;
     statusId: number;
-    statusName: string;
+    statusDescription: string;
   };
 }> {
   try {
@@ -74,6 +74,7 @@ export async function getStatusById(orderId: number): Promise<{
         },
       },
     );
+    console.log("Response from getStatusById:", response.data);
     if (response.status !== 200) {
       return response.data;
     }
